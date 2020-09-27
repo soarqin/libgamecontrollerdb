@@ -9,7 +9,8 @@ namespace gamecontrollerdb {
 
 enum {
     PlatformInvalid = -1,
-    PlatformWindows = 0,
+    PlatformAny = 0,
+    PlatformWindows,
     PlatformMacOS,
     PlatformLinux,
     PlatformiOS,
@@ -42,14 +43,49 @@ enum {
     AxisMax,
 };
 
+enum {
+    HatUp = 1,
+    HatRight = 2,
+    HatDown = 4,
+    HatLeft = 8,
+};
+
+enum {
+    ButtonInput = 0,
+    HatInput,
+    AxisInput,
+};
+
 using GUID = std::array<uint8_t, 16>;
 
 struct HashGUID {
     size_t operator()(const gamecontrollerdb::GUID&) const noexcept;
 };
 
+struct ControllerButtonOrAxis {
+    uint8_t inputType;
+
+    /* ButtonInput: button id
+     * HatInput: hat index
+     * AxisInput: axis index
+     */
+    uint8_t id;
+
+    /* ButtonInput: unused
+     * HatInput: hat value
+     * AxisInput:
+     *    0 - process -max to +max
+     *   -1 - process -max to 0
+     *    1 - process 0 to +max
+     */
+    int8_t value;
+};
+
 class Controller {
     friend class DB;
+
+public:
+    int inputMapping(const ControllerButtonOrAxis &cboa) const;
 
 private:
     bool processToken(int index, const std::string &token);
@@ -57,7 +93,8 @@ private:
 private:
     GUID guid;
     std::string name;
-    int platform = 0;
+    int platform = PlatformAny;
+    std::unordered_map<int, int> buttonOrAxisMapping;
 };
 
 class DB {

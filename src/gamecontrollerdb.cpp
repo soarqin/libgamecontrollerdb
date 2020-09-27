@@ -28,6 +28,20 @@ inline bool convertGUID(GUID &guid, const std::string &guidStr) {
     return true;
 }
 
+inline int convertControllerButtonOrAxisToInt(const ControllerButtonOrAxis &cboa) {
+    return static_cast<int>(cboa.inputType)
+           | (static_cast<int>(cboa.id) << 8)
+           | (static_cast<int>(cboa.value) << 16);
+}
+
+int Controller::inputMapping(const ControllerButtonOrAxis &cboa) const {
+    auto ite = buttonOrAxisMapping.find(convertControllerButtonOrAxisToInt(cboa));
+    if (ite == buttonOrAxisMapping.end()) {
+        return -1;
+    }
+    return ite->second;
+}
+
 bool Controller::processToken(int index, const std::string &token) {
     static const std::unordered_map<std::string, int> _buttonNameMap = {
         { "a", ButtonA },
@@ -76,8 +90,53 @@ bool Controller::processToken(int index, const std::string &token) {
     }
     auto key = token.substr(0, pos);
     auto value = token.substr(pos + 1);
+    if (value.empty()) {
+        return false;
+    }
     auto ite = _buttonNameMap.find(key);
     if (ite != _buttonNameMap.end()) {
+        ControllerButtonOrAxis cboa {};
+        switch (value[0]) {
+        case '+':
+        case '-':
+            if (value.length() < 3 || value[1] != 'a') {
+                return false;
+            }
+            cboa.inputType = AxisInput;
+            cboa.id = std::strtol(value.c_str() + 2, nullptr, 10);
+            cboa.value = value[0] == '+' ? 1 : -1;
+            break;
+        case 'a':
+            if (value.length() < 2) {
+                return false;
+            }
+            cboa.inputType = AxisInput;
+            cboa.id = std::strtol(value.c_str() + 1, nullptr, 10);
+            cboa.value = 0;
+            break;
+        case 'b':
+            if (value.length() < 2) {
+                return false;
+            }
+            cboa.inputType = ButtonInput;
+            cboa.id = std::strtol(value.c_str() + 1, nullptr, 10);
+            cboa.value = 0;
+            break;
+        case 'h': {
+            if (value.length() < 4) {
+                return false;
+            }
+            cboa.inputType = HatInput;
+            char *endptr;
+            cboa.id = std::strtol(value.c_str() + 1, &endptr, 10);
+            if (endptr == nullptr || *endptr != '.') {
+                return false;
+            }
+            cboa.value = std::strtol(endptr + 1, nullptr, 10);;
+            break;
+        }
+        }
+        buttonOrAxisMapping[convertControllerButtonOrAxisToInt(cboa)] = ite->second;
         return true;
     }
     if (key == "platform") {
