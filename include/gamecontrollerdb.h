@@ -7,23 +7,57 @@
 
 namespace gamecontrollerdb {
 
-enum : size_t {
+enum {
+    PlatformInvalid = -1,
     PlatformWindows = 0,
     PlatformMacOS,
     PlatformLinux,
     PlatformiOS,
     PlatformAndroid,
-    PlatformMax
+    PlatformMax,
+};
+
+enum {
+    ButtonInvalid = -1,
+    ButtonA,
+    ButtonB,
+    ButtonX,
+    ButtonY,
+    ButtonBack,
+    ButtonGuide,
+    ButtonStart,
+    ButtonLeftstick,
+    ButtonRightstick,
+    ButtonLeftshoulder,
+    ButtonRightshoulder,
+    ButtonDpadUp,
+    ButtonDpadDown,
+    ButtonDpadLeft,
+    ButtonDpadRight,
+    ButtonMax,
+    AxisLeftX = ButtonMax,
+    AxisLeftY,
+    AxisRightX,
+    AxisRightY,
+    AxisMax,
 };
 
 using GUID = std::array<uint8_t, 16>;
+
+struct HashGUID {
+    size_t operator()(const gamecontrollerdb::GUID&) const noexcept;
+};
 
 class Controller {
     friend class DB;
 
 private:
+    bool processToken(int index, const std::string &token);
+
+private:
     GUID guid;
     std::string name;
+    int platform = 0;
 };
 
 class DB {
@@ -35,10 +69,9 @@ public:
 
 private:
     bool addFromLine(const std::string &line);
-    bool processToken(Controller &c, const std::string &token);
 
 private:
-    std::unordered_map<GUID, ControllersByPlatform> controllers;
+    std::unordered_map<GUID, ControllersByPlatform, HashGUID> controllers;
 };
 
 }
