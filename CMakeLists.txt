@@ -1,3 +1,5 @@
+project(libgamecontrollerdb CXX)
+
 add_library(libgamecontrollerdb STATIC
     src/gamecontrollerdb.cpp
     include/gamecontrollerdb.h)

@@ -13,8 +13,8 @@ size_t HashGUID::operator()(const GUID &guid) const noexcept {
 
 inline bool convertGUID(GUID &guid, const std::string &guidStr) {
     size_t len = guidStr.length() & ~1u;
-    if (len > guid.size()) {
-        len = guid.size();
+    if (len > guid.size() * 2) {
+        len = guid.size() * 2;
     }
     for (size_t i = 0; i < len; i += 2) {
         char hex[3] = {guidStr[i], guidStr[i + 1], 0};
@@ -183,15 +183,19 @@ bool DB::addFromLine(const std::string &line) {
     typename std::string::size_type pos = 0;
     Controller c;
     int index = 0;
-    while (pos != std::string::npos) {
+    auto len = line.length();
+    while (pos != std::string::npos && pos < len) {
         auto start_pos = line.find_first_not_of(" \t\v\r\n", pos);
+        if (start_pos == std::string::npos) {
+            break;
+        }
         auto end_pos = line.find(',', pos);
         std::string token;
         if (end_pos == std::string::npos) {
-            token = line.substr(start_pos, end_pos - start_pos);
+            token = line.substr(start_pos);
             pos = std::string::npos;
         } else {
-            token = line.substr(start_pos);
+            token = line.substr(start_pos, end_pos - start_pos);
             pos = end_pos + 1;
         }
         if (!c.processToken(index, token)) {
